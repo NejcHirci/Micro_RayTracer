@@ -17,7 +17,7 @@ public:
 	std::shared_ptr<Walnut::Image> GetRenderImage() const { return m_RenderImage; }
 
 private:
-	uint32_t fragShader(glm::vec2 coord);
+	glm::vec4 fragShader(glm::vec2 coord);
 private:
 	std::shared_ptr<Walnut::Image> m_RenderImage;
 	uint32_t* m_RenderImageData = nullptr;
