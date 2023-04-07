@@ -1,6 +1,9 @@
-#include "Renderer.h"
+#include <iostream>
 
 #include "Walnut/Random.h"
+
+#include "Renderer.h"
+
 
 namespace Utils {
 	static uint32_t ConvertToRGBA(const glm::vec4& color)
@@ -16,16 +19,19 @@ namespace Utils {
 }
 
 
-void Renderer::Render()
+void Renderer::Render(const Scene& scene, const Camera& camera)
 {
+	Ray ray;
+	ray.Origin = camera.GetPosition();
+
 	// Image Data Filling Loop
 	for (uint32_t y = 0; y < m_RenderImage->GetHeight(); y++) 
 	{
 		for (uint32_t x = 0; x < m_RenderImage->GetWidth(); x++)
 		{
-			glm::vec2 coord = { (float)x / (float)m_RenderImage->GetWidth(), (float)y / (float)m_RenderImage->GetHeight() };
-			coord = coord * 2.0f - 1.0f; // -1 -> 1
-			glm::vec4 color = fragShader(coord);
+			ray.Direction = camera.GetRayDirections()[x + y * m_RenderImage->GetWidth()];
+
+			glm::vec4 color = TraceRay(scene, ray);
 			color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
 			m_RenderImageData[y * m_RenderImage->GetWidth() + x] = Utils::ConvertToRGBA(color);
 		}
@@ -50,34 +56,35 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 	m_RenderImageData = new uint32_t[width * height];
 }
 
+
 // This is a CPU implementation of a shader
-glm::vec4 Renderer::fragShader(glm::vec2 coord)
+glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
 {
-	// Sphere
-	float sphereRadius = 0.5f;
-
-	// Ray
-	glm::vec3 rayDirection(coord.x, coord.y, -1.0f);
-	glm::vec3 rayOrigin(0.0f, 0.0f, 2.0f);
-
-	// Intersection
-	float a = glm::dot(rayDirection, rayDirection);
-	float b = 2.0f * glm::dot(rayOrigin, rayDirection);
-	float c = glm::dot(rayOrigin, rayOrigin) - sphereRadius * sphereRadius;
-
-	// Discriminant
-	float d = b * b - 4.0f * a * c;
-
-	if (d <= 0.0f) {
+	// No objects in the scene
+	if (scene.shapes.size() == 0)
 		return glm::vec4(0, 0, 0, 1);
-	}
 
-	// Closest intersection
-	float t0 = (-b - glm::sqrt(d)) / (2.0f * a);
+	const Shape* closestShape = nullptr;
+	float hitDistance = FLT_MAX;
+
+	for (Shape* shape : scene.shapes) 
+	{
+		float distance = shape->Intersect(ray);
+
+		if (distance > 0.0f && distance < hitDistance) {
+			hitDistance = distance;
+			closestShape = shape;
+		}
+	}
 	
-	glm::vec3 hitPoint = rayOrigin + rayDirection * t0;
+	glm::vec3 hitPoint = ray.Origin + ray.Direction * hitDistance;
 	glm::vec3 normal = glm::normalize(hitPoint);
 
-	glm::vec3 sphereColor = normal;
-	return glm::vec4(normal, 1.0f);
+	// Lambert
+	float diffuse = glm::max(glm::dot(normal, -scene.lights[0].Direction), 0.0f);
+
+
+	glm::vec3 sphereColor(1, 0, 1);
+	sphereColor *= diffuse;
+	return glm::vec4(sphereColor * scene.lights[0].Color, 1.0f);
 }
