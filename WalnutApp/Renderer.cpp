@@ -21,6 +21,9 @@ namespace Utils {
 
 void Renderer::Render(const Scene& scene, const Camera& camera)
 {
+	m_ActiveScene = &scene;
+	m_ActiveCamera = &camera;
+
 	Ray ray;
 	ray.Origin = camera.GetPosition();
 

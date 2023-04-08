@@ -6,10 +6,10 @@
 
 float Sphere::Intersect(const Ray& ray)
 {
-	glm::vec3 vecDif = ray.Origin - Position;
+	glm::vec3 origin = ray.Origin - Position;
 	float a = glm::dot(ray.Direction, ray.Direction);
-	float b = 2.0f * glm::dot(vecDif, ray.Direction);
-	float c = glm::dot(vecDif, vecDif) - Radius * Radius;
+	float b = 2.0f * glm::dot(origin, ray.Direction);
+	float c = glm::dot(origin, origin) - Radius * Radius;
 
 	// Discriminant
 	float d = b * b - 4.0f * a * c;

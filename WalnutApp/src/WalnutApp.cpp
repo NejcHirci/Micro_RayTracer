@@ -24,15 +24,15 @@ public:
 		m_Scene.materials.push_back(pink_diffuse);
 
 		// Shape 1
-		Sphere* sphere = new Sphere();
-		sphere->Position = { 0.0f, 0.0f, 0.0f };
-		sphere->Radius = 0.5f;
-		sphere->MaterialIndex = 0;
-		m_Scene.shapes.push_back(sphere);
+		Sphere* sphere1 = new Sphere();
+		sphere1->Position = { 0.0f, 0.0f, 0.0f };
+		sphere1->Radius = 0.5f;
+		sphere1->MaterialIndex = 0;
+		m_Scene.shapes.push_back(sphere1);
 
 		// Shape 2
 		Sphere* sphere2 = new Sphere();
-		sphere2->Position = { 0.0f, 0.5f, 2.0f };
+		sphere2->Position = { 1.0f, 1.0f, 0.0f };
 		sphere2->Radius = 0.1f;
 		sphere2->MaterialIndex = 0;
 		m_Scene.shapes.push_back(sphere2);

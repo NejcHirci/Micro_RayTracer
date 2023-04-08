@@ -21,8 +21,28 @@ public:
 	std::shared_ptr<Walnut::Image> GetRenderImage() const { return m_RenderImage; }
 
 private:
-	glm::vec4 TraceRay(const Scene& scene, const Ray& ray);
+
+	struct HitPayLoad
+	{
+		float HitDistance;
+		glm::vec3 WorldPosition;
+		glm::vec3 WorldNormal;
+
+		uint32_t ObjectIndex;
+	};
+
+	glm::vec4 PerPixel(); // RayGenShader in Vulkan
+
+
+	HitPayLoad TraceRay(const Ray& ray);
+	HitPayLoad ClosestHit(const Ray& ray, float hitDistance, uint32_t objectIndex);
+	HitPayLoad Miss(const Ray& ray);
+
 private:
 	std::shared_ptr<Walnut::Image> m_RenderImage;
+
+	const Scene *m_ActiveScene = nullptr;
+	const Camera *m_ActiveCamera = nullptr;
+
 	uint32_t* m_RenderImageData = nullptr;
 };
