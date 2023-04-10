@@ -10,10 +10,10 @@
 
 using namespace Walnut;
 
-class ExampleLayer : public Walnut::Layer
+class MainLayer : public Walnut::Layer
 {
 public:
-	ExampleLayer()
+	MainLayer()
 		: m_Camera(45.0f, 0.1f, 100.0f) 
 	{
 		// Initialize test scene
@@ -23,18 +23,22 @@ public:
 		pink_diffuse.Albedo = { 1.0f, 0.0f, 1.0f };
 		m_Scene.materials.push_back(pink_diffuse);
 
+		Material blue_diffuse;
+		blue_diffuse.Albedo = { 0.0f, 0.0f, 1.0f };
+		m_Scene.materials.push_back(blue_diffuse);
+
 		// Shape 1
 		Sphere* sphere1 = new Sphere();
 		sphere1->Position = { 0.0f, 0.0f, 0.0f };
-		sphere1->Radius = 0.5f;
+		sphere1->Radius = 0.4f;
 		sphere1->MaterialIndex = 0;
 		m_Scene.shapes.push_back(sphere1);
 
 		// Shape 2
 		Sphere* sphere2 = new Sphere();
-		sphere2->Position = { 0.0f, 1.0f, 0.0f };
+		sphere2->Position = { 2.0f, 0.0f, 0.0f };
 		sphere2->Radius = 0.6f;
-		sphere2->MaterialIndex = 0;
+		sphere2->MaterialIndex = 1;
 		m_Scene.shapes.push_back(sphere2);
 
 
@@ -119,8 +123,9 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 	spec.Name = "Ray Tracer";
 
 	Walnut::Application* app = new Walnut::Application(spec);
-	app->PushLayer<ExampleLayer>();
+	app->PushLayer<MainLayer>();
 	app->SetMenubarCallback([app]()
+	
 	{
 		if (ImGui::BeginMenu("File"))
 		{

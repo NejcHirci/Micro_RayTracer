@@ -5,6 +5,9 @@
 #include "Renderer.h"
 
 
+// TODO: Implement a true path tracing renderer
+
+
 namespace Utils {
 	static uint32_t ConvertToRGBA(const glm::vec4& color)
 	{		
@@ -61,17 +64,40 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	ray.Origin = m_ActiveCamera->GetPosition();
 	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_RenderImage->GetWidth()]; 
 
-	Renderer::HitPayLoad payload = TraceRay(ray);
-	if (payload.HitDistance < 0)
-		return glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	glm::vec3 color(0.0f);
 
-	// Lambert
-	float diffuse = glm::max(glm::dot(payload.WorldNormal, -(m_ActiveScene->lights[0].Direction)), 0.0f);
+	int bounces = 2;
+	float multiplier = 1.0f;
 
-	const Shape* shape = m_ActiveScene->shapes[payload.ObjectIndex];
-	glm::vec3 sphereColor = m_ActiveScene->materials[shape->MaterialIndex].Albedo;
-	sphereColor *= diffuse;
-	return glm::vec4(sphereColor * m_ActiveScene->lights[0].Color, 1.0f);
+	// Perform multiple ray bounces
+	for (int i = 0; i < bounces; i++)
+	{
+		Renderer::HitPayLoad payload = TraceRay(ray);
+		if (payload.HitDistance < 0)
+		{	
+			glm::vec3 skyColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+			color += skyColor * multiplier;
+			break;
+		}
+
+		// Lambert
+		float diffuse = glm::max(glm::dot(payload.WorldNormal, -(m_ActiveScene->lights[0].Direction)), 0.0f);
+
+		const Shape* shape = m_ActiveScene->shapes[payload.ObjectIndex];
+		glm::vec3 sphereColor = m_ActiveScene->materials[shape->MaterialIndex].Albedo;
+		sphereColor *= diffuse;
+		color += sphereColor * multiplier;
+
+		multiplier *= 0.7f;
+
+
+		// Reflection
+		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f; // Offset the origin a bit to avoid self intersection
+		ray.Direction = glm::reflect(ray.Direction, payload.WorldNormal);
+	}
+
+
+	return glm::vec4(color, 1.0f);
 }
 
 
@@ -89,7 +115,7 @@ Renderer::HitPayLoad Renderer::TraceRay(const Ray& ray)
 		if (distance < 0.0f)
 			continue;
 
-		if (distance < hitDistance) {
+		if (distance > 0.0f && distance < hitDistance) {
 			hitDistance = distance;
 			closestShapeID = (int)i;
 		}

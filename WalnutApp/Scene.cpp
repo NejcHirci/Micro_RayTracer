@@ -2,8 +2,18 @@
 
 #include "Scene.h"
 #include <iostream>
-// Define Intersection functions
 
+// TODO: Implement physically based spherical lights and the Oren-Nayar material model.
+
+/*
+* OPTIONAL
+* TODO: support for light sampling with specular materials.
+* TODO: Implement a transmitting BSDF model (glass, water, etc.) with support for specular transmission and caustics. 
+*		Use Fresnel's equations for determining the amount of transmitted light and Implement Snell's Law for refraction.
+* TODO: Implement an anisotropic BRDF material like Aluminium.
+*/
+
+// Define Intersection functions
 float Sphere::Intersect(const Ray& ray)
 {
 	glm::vec3 origin = ray.Origin - Position;
