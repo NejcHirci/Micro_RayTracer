@@ -13,7 +13,7 @@ float Sphere::Intersect(const Ray& ray)
 
 	// Discriminant
 	float d = b * b - 4.0f * a * c;
-	if (d <= 0.0f) {
+	if (d < 0.0f) {
 		return -1.0f;
 	}
 

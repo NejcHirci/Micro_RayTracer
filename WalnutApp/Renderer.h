@@ -28,14 +28,14 @@ private:
 		glm::vec3 WorldPosition;
 		glm::vec3 WorldNormal;
 
-		uint32_t ObjectIndex;
+		int ObjectIndex;
 	};
 
-	glm::vec4 PerPixel(); // RayGenShader in Vulkan
+	glm::vec4 PerPixel(uint32_t x, uint32_t y); // RayGenShader in Vulkan
 
 
 	HitPayLoad TraceRay(const Ray& ray);
-	HitPayLoad ClosestHit(const Ray& ray, float hitDistance, uint32_t objectIndex);
+	HitPayLoad ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
 	HitPayLoad Miss(const Ray& ray);
 
 private:

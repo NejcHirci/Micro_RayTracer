@@ -24,17 +24,12 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	m_ActiveScene = &scene;
 	m_ActiveCamera = &camera;
 
-	Ray ray;
-	ray.Origin = camera.GetPosition();
-
 	// Image Data Filling Loop
 	for (uint32_t y = 0; y < m_RenderImage->GetHeight(); y++) 
 	{
 		for (uint32_t x = 0; x < m_RenderImage->GetWidth(); x++)
 		{
-			ray.Direction = camera.GetRayDirections()[x + y * m_RenderImage->GetWidth()];
-
-			glm::vec4 color = TraceRay(scene, ray);
+			glm::vec4 color = PerPixel(x, y);
 			color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
 			m_RenderImageData[y * m_RenderImage->GetWidth() + x] = Utils::ConvertToRGBA(color);
 		}
@@ -59,35 +54,76 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 	m_RenderImageData = new uint32_t[width * height];
 }
 
-
-// This is a CPU implementation of a shader
-glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
+glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 {
-	// No objects in the scene
-	if (scene.shapes.size() == 0)
-		return glm::vec4(0, 0, 0, 1);
+	// In Vulkan, there is gl_launchID which is the id of the current pixel
+	Ray ray;
+	ray.Origin = m_ActiveCamera->GetPosition();
+	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_RenderImage->GetWidth()]; 
 
-	const Shape* closestShape = nullptr;
-	float hitDistance = FLT_MAX;
-
-	for (Shape* shape : scene.shapes) 
-	{
-		float distance = shape->Intersect(ray);
-
-		if (distance > 0.0f && distance < hitDistance) {
-			hitDistance = distance;
-			closestShape = shape;
-		}
-	}
-	
-	glm::vec3 hitPoint = ray.Origin + ray.Direction * hitDistance;
-	glm::vec3 normal = glm::normalize(hitPoint);
+	Renderer::HitPayLoad payload = TraceRay(ray);
+	if (payload.HitDistance < 0)
+		return glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	// Lambert
-	float diffuse = glm::max(glm::dot(normal, -scene.lights[0].Direction), 0.0f);
+	float diffuse = glm::max(glm::dot(payload.WorldNormal, -(m_ActiveScene->lights[0].Direction)), 0.0f);
 
-
-	glm::vec3 sphereColor(1, 0, 1);
+	const Shape* shape = m_ActiveScene->shapes[payload.ObjectIndex];
+	glm::vec3 sphereColor = m_ActiveScene->materials[shape->MaterialIndex].Albedo;
 	sphereColor *= diffuse;
-	return glm::vec4(sphereColor * scene.lights[0].Color, 1.0f);
+	return glm::vec4(sphereColor * m_ActiveScene->lights[0].Color, 1.0f);
+}
+
+
+// This is a CPU implementation of a shader with RayGen equivalent in Vulkan
+Renderer::HitPayLoad Renderer::TraceRay(const Ray& ray)
+{
+	int closestShapeID = -1;
+	float hitDistance = FLT_MAX;
+
+	for (size_t i=0; i < m_ActiveScene->shapes.size(); i++) 
+	{
+		Shape* shape = m_ActiveScene->shapes[i];
+		float distance = shape->Intersect(ray);
+
+		if (distance < 0.0f)
+			continue;
+
+		if (distance < hitDistance) {
+			hitDistance = distance;
+			closestShapeID = (int)i;
+		}
+	}
+
+	if (closestShapeID < 0)
+		return Miss(ray);
+
+	return ClosestHit(ray, hitDistance, closestShapeID);
+}
+
+
+Renderer::HitPayLoad Renderer::Miss(const Ray& ray)
+{
+	Renderer::HitPayLoad payload;
+	payload.HitDistance = -1.0f;
+	return payload;
+}
+
+
+Renderer::HitPayLoad Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex)
+{
+	Renderer::HitPayLoad payload;
+	payload.ObjectIndex = objectIndex;
+	payload.HitDistance = hitDistance;
+
+
+	const Shape* closestShape = m_ActiveScene->shapes[objectIndex];
+
+	glm::vec3 origin = ray.Origin - closestShape->Position;
+	payload.WorldPosition = origin + ray.Direction * hitDistance;
+	payload.WorldNormal = glm::normalize(payload.WorldPosition);
+
+	payload.WorldPosition += closestShape->Position;
+
+	return payload;
 }

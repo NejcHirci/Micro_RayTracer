@@ -32,8 +32,8 @@ public:
 
 		// Shape 2
 		Sphere* sphere2 = new Sphere();
-		sphere2->Position = { 1.0f, 1.0f, 0.0f };
-		sphere2->Radius = 0.1f;
+		sphere2->Position = { 0.0f, 1.0f, 0.0f };
+		sphere2->Radius = 0.6f;
 		sphere2->MaterialIndex = 0;
 		m_Scene.shapes.push_back(sphere2);
 

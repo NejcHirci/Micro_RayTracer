@@ -45,8 +45,17 @@ struct Material
 	glm::vec3 Albedo;
 };
 
-// Scene
 
+struct MicrofacetBRDF
+{
+	float Roughness = 0.5f;
+	float Metallic = 0.0f;
+
+	glm::vec3 albedo;
+	glm::vec3 normal;
+};
+
+// Scene
 struct Scene
 {
 	std::vector<Light> lights;
