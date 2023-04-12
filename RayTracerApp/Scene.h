@@ -6,15 +6,6 @@
 
 #include "Ray.h"
 
-// Lights
-struct Light
-{
-	glm::vec3 Position;
-	glm::vec3 Direction;
-	glm::vec3 Color;
-	float Intensity = 1.0f;
-};
-
 // Primitives
 struct Shape
 {
@@ -35,6 +26,14 @@ struct Plane : public Shape
 {
 	float Intersect(const Ray& ray) override;
 	glm::vec3 Normal = glm::vec3(0.0f, 1.0f, 0.0f);
+};
+
+// Lights
+struct Light
+{
+	glm::vec3 Color;
+	Shape* shape;
+	float intensity = 1.0f;
 };
 
 // Materials
@@ -61,5 +60,4 @@ struct Scene
 	std::vector<Light> lights;
 	std::vector<Shape*> shapes;
 	std::vector<Material> materials;
-	
 };

@@ -44,16 +44,20 @@ public:
 
 		// Lights
 		Light light;
-		light.Position = { 0.0f, 0.0f, 0.0f };
-		light.Direction = { 0.0f, 0.0f, -1.0f };
 		light.Color = { 1.0f, 1.0f, 1.0f };
+		Sphere* lightShape = new Sphere();
+		lightShape->Position = { 0.0f, 5.0f, 0.0f };
+		lightShape->Radius = 0.1f;
+		light.shape = lightShape;
+
 		m_Scene.lights.push_back(light);
 	
 	}
 
 	virtual void OnUpdate(float ts) override
 	{
-		m_Camera.OnUpdate(ts);
+		if(m_Camera.OnUpdate(ts))
+			m_Renderer.ResetFrameIndex();
 
 	}
 
@@ -62,6 +66,16 @@ public:
 		// Settings
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
+		ImGui::Text("Sample count: %d", m_Renderer.GetFrameIndex());
+
+		ImGui::Checkbox("Accumulate", &m_Renderer.GetSettings().Accumulate);
+
+		if (ImGui::Button("Render"))
+			Render();
+
+		if (ImGui::Button("Reset"))
+			m_Renderer.ResetFrameIndex();
+
 		ImGui::End();
 
 		// Scene 
@@ -69,8 +83,8 @@ public:
 		// If at least one light in scene
 		if (m_Scene.lights.size() > 0)
 		{
-			ImGui::SliderFloat3("Direction:", (float*)&m_Scene.lights[0].Direction, -1.0f, 1.0f);
-			ImGui::SliderFloat("Intensity:", &m_Scene.lights[0].Intensity, 0.0f, 10.0f);
+			//ImGui::SliderFloat3("Direction:", (float*)&m_Scene.lights[0].Direction, -1.0f, 1.0f);
+			//ImGui::SliderFloat("Intensity:", &m_Scene.lights[0].Intensity, 0.0f, 10.0f);
 			ImGui::ColorEdit3("Color", &m_Scene.lights[0].Color.x);
 		}
 		ImGui::End();
