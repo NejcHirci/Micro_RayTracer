@@ -17,41 +17,7 @@ public:
 		: m_Camera(45.0f, 0.1f, 100.0f) 
 	{
 		// Initialize test scene
-
-		// Materials
-		Material pink_diffuse;
-		pink_diffuse.Albedo = { 1.0f, 0.0f, 1.0f };
-		m_Scene.materials.push_back(pink_diffuse);
-
-		Material blue_diffuse;
-		blue_diffuse.Albedo = { 0.0f, 0.0f, 1.0f };
-		m_Scene.materials.push_back(blue_diffuse);
-
-		// Shape 1
-		Sphere* sphere1 = new Sphere();
-		sphere1->Position = { 0.0f, 0.0f, 0.0f };
-		sphere1->Radius = 0.4f;
-		sphere1->MaterialIndex = 0;
-		m_Scene.shapes.push_back(sphere1);
-
-		// Shape 2
-		Sphere* sphere2 = new Sphere();
-		sphere2->Position = { 2.0f, 0.0f, 0.0f };
-		sphere2->Radius = 0.6f;
-		sphere2->MaterialIndex = 1;
-		m_Scene.shapes.push_back(sphere2);
-
-
-		// Lights
-		Light light;
-		light.Color = { 1.0f, 1.0f, 1.0f };
-		Sphere* lightShape = new Sphere();
-		lightShape->Position = { 0.0f, 5.0f, 0.0f };
-		lightShape->Radius = 0.1f;
-		light.shape = lightShape;
-
-		m_Scene.lights.push_back(light);
-	
+		m_Scene.CreateScene();
 	}
 
 	virtual void OnUpdate(float ts) override
@@ -66,6 +32,7 @@ public:
 		// Settings
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
+		ImGui::Text("FPS: %d", (int)(1000.0f / m_LastRenderTime));
 		ImGui::Text("Sample count: %d", m_Renderer.GetFrameIndex());
 
 		ImGui::Checkbox("Accumulate", &m_Renderer.GetSettings().Accumulate);
@@ -81,11 +48,11 @@ public:
 		// Scene 
 		ImGui::Begin("Scene");
 		// If at least one light in scene
-		if (m_Scene.lights.size() > 0)
+		if (m_Scene.Lights.size() > 0)
 		{
-			//ImGui::SliderFloat3("Direction:", (float*)&m_Scene.lights[0].Direction, -1.0f, 1.0f);
-			//ImGui::SliderFloat("Intensity:", &m_Scene.lights[0].Intensity, 0.0f, 10.0f);
-			ImGui::ColorEdit3("Color", &m_Scene.lights[0].Color.x);
+			ImGui::SliderFloat3("Position:", (float*)&m_Scene.Lights[0]->Shape->Position, -5.0f, 5.0f);
+			ImGui::SliderFloat("Intensity:", &m_Scene.Lights[0]->Intensity, 0.0f, 1000.0f);
+			ImGui::ColorEdit3("Color", (float *)&m_Scene.Lights[0]->Color);
 		}
 		ImGui::End();
 
@@ -121,9 +88,6 @@ private:
 	Renderer m_Renderer;
 	Camera m_Camera;
 	Scene m_Scene;
-
-	glm::vec3 lightDir = glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec4 lightColor;
 
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 

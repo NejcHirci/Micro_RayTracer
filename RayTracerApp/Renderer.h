@@ -3,7 +3,6 @@
 #include "Walnut/Image.h"
 
 #include "Camera.h"
-#include "Ray.h"
 #include "Scene.h"
 
 #include <memory>
@@ -46,14 +45,15 @@ private:
 
 	HitPayLoad TraceRay(const Ray& ray);
 	HitPayLoad ClosestHit(const Ray& ray, float hitDistance, int objectIndex, bool lightHit);
-	glm::vec3 sampleBSDF(Renderer::HitPayLoad object, glm::vec3 inboundRay, glm::vec3 outboundRay);
-	glm::vec3 sampleLight();
-	glm::vec3 sampleHemisphere();
 	HitPayLoad Miss(const Ray& ray);
+
+	glm::vec3 Renderer::EvaluateBSDF(Renderer::HitPayLoad payload, glm::vec3 inboundRay, glm::vec3 outboundRay);
 
 private:
 	Settings m_Settings;
 	std::shared_ptr<Walnut::Image> m_RenderImage;
+
+	std::vector<uint32_t> m_HorizontalIter, m_VerticalIter;
 
 	const Scene *m_ActiveScene = nullptr;
 	const Camera *m_ActiveCamera = nullptr;

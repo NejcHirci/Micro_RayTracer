@@ -1,25 +1,10 @@
 #include <iostream>
+#include <execution>
 
 #include "Walnut/Random.h"
 
 #include "Renderer.h"
-
-
-// TODO: Implement a true path tracing renderer
-
-
-namespace Utils {
-	static uint32_t ConvertToRGBA(const glm::vec4& color)
-	{		
-		uint8_t r = (uint8_t)(color.r * 255.0f);
-		uint8_t g = (uint8_t)(color.g * 255.0f);
-		uint8_t b = (uint8_t)(color.b * 255.0f);
-		uint8_t a = (uint8_t)(color.a * 255.0f);
-
-		uint32_t result = (a << 24) | (b << 16) | (g << 8) | r;
-		return result;
-	}
-}
+#include "Utils.h"
 
 
 void Renderer::Render(const Scene& scene, const Camera& camera)
@@ -30,21 +15,23 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	if (m_FrameIndex == 1)
 		memset(m_AccumulationData, 0, m_RenderImage->GetWidth() * m_RenderImage->GetHeight() * sizeof(glm::vec4));
 
-	// Image Data Filling Loop
-	for (uint32_t y = 0; y < m_RenderImage->GetHeight(); y++) 
-	{
-		for (uint32_t x = 0; x < m_RenderImage->GetWidth(); x++)
+	std::for_each(std::execution::par, m_VerticalIter.begin(), m_VerticalIter.end(),
+		[this](uint32_t y) 
 		{
-			glm::vec4 color = PerPixel(x, y);
-			m_AccumulationData[y * m_RenderImage->GetWidth() + x] += color;
+			// Lambda function for parallel execution
+			for (uint32_t x = 0; x < m_RenderImage->GetWidth(); x++)
+			{
+				glm::vec4 color = PerPixel(x, y);
+				m_AccumulationData[y * m_RenderImage->GetWidth() + x] += color;
 
-			glm::vec4 accumulatedColor = m_AccumulationData[y * m_RenderImage->GetWidth() + x];
-			accumulatedColor = accumulatedColor / (float)m_FrameIndex;
+				glm::vec4 accumulatedColor = m_AccumulationData[y * m_RenderImage->GetWidth() + x];
+				accumulatedColor = accumulatedColor / (float)m_FrameIndex;
 
-			accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
-			m_RenderImageData[y * m_RenderImage->GetWidth() + x] = Utils::ConvertToRGBA(accumulatedColor);
-		}
-	}
+				accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+				m_RenderImageData[y * m_RenderImage->GetWidth() + x] = Utils::ConvertToRGBA(accumulatedColor);
+			}
+		});
+
 	m_RenderImage->SetData(m_RenderImageData);
 
 	// Accumulation
@@ -72,6 +59,13 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 	
 	delete[] m_AccumulationData;
 	m_AccumulationData = new glm::vec4[width * height];
+
+	m_HorizontalIter.resize(width);
+	m_VerticalIter.resize(height);
+	for(uint32_t i=0; i < width; i++)
+		m_HorizontalIter[i] = i;
+	for (uint32_t i = 0; i < height; i++)
+		m_VerticalIter[i] = i;
 }
 
 glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
@@ -80,71 +74,49 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 
 	Ray ray;
 	ray.Origin = m_ActiveCamera->GetPosition();
-	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_RenderImage->GetWidth()];
+	//ray.Direction = m_ActiveCamera->GetRayDirections()[y * m_RenderImage->GetWidth() + x];
 
 
-	//float u = ((float)x + Walnut::Random::Float()) / (float)m_RenderImage->GetWidth();
-	//float v = ((float)y + Walnut::Random::Float()) / (float)m_RenderImage->GetHeight();
-	//glm::vec2 coord = { u, v };
-	//coord = coord * 2.0f - 1.0f; // -1 -> 1
-	//glm::vec4 target = m_ActiveCamera->GetInverseProjection() * glm::vec4(coord.x, coord.y, 1, 1);
-	//ray.Direction = glm::vec3(m_ActiveCamera->GetInverseView() * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0)); // World space
+	float u = ((float)x + Walnut::Random::Float()) / (float)m_RenderImage->GetWidth();
+	float v = ((float)y + Walnut::Random::Float()) / (float)m_RenderImage->GetHeight();
+	glm::vec2 coord = { u, v };
+	coord = coord * 2.0f - 1.0f; // -1 -> 1
+	glm::vec4 target = m_ActiveCamera->GetInverseProjection() * glm::vec4(coord.x, coord.y, 1, 1);
+	ray.Direction = glm::vec3(m_ActiveCamera->GetInverseView() * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0)); // World space
+	ray.Direction = glm::normalize(ray.Direction);
 
-	int bounces = 20;
+	int bounces = 1000;
 
 	glm::vec3 radiance(0.0f);
-	glm::vec3 factor(1.0f);
+	glm::vec3 rayColor(1.0f);
 
 	for (int bounce = 0; bounce < bounces; bounce++)
 	{
 		Renderer::HitPayLoad payload = TraceRay(ray);
 
+		if (payload.HitDistance < 0) {
 
-		// Miss
-		if (payload.HitDistance < 0)
-		{	
-			break;
-			auto unit_dir = glm::normalize(ray.Direction);
-			float t = 0.5 * (unit_dir.y + 1.0);
-			glm::vec3 skyColor = (1.0f - t) * glm::vec3(1.0, 1.0, 1.0) + t * glm::vec3(0.5, 0.7, 1.0);
-			radiance += factor * skyColor;
+			glm::vec3 skyColor = glm::vec3(0.5f, 0.7f, 1.0f);
+			auto t = 0.5f * (ray.Direction.y + 1.0f);
+			radiance = rayColor * (glm::mix(glm::vec3(1.0f), skyColor, t)) * 0.1f;
 			break;
 		}
 
-		glm::vec3 wo = -ray.Direction;
+		glm::vec3 rInbound = -ray.Direction;
 
-		// Hit the light source
-		if (payload.LightHit)
+		ray.Origin = payload.WorldPosition;
+		ray.Direction = Utils::UniformSampleHemisphere();
+		ray.Direction *= glm::sign(glm::dot(payload.WorldNormal, ray.Direction));
+
+		if (payload.LightHit) 
 		{
-			// Direct light hit
-			if (bounce == 0) {
-				radiance = factor * sampleLight();
-			}
+			glm::vec3 emmittedLight = m_ActiveScene->Lights[0]->SamplePoint();
+			radiance += rayColor * emmittedLight;
+
 			break;
 		}
 
-		// sample Light from the light source
-		glm::vec3 Ld = sampleLight();
-		radiance += factor * Ld;
-
-		// Randomly sample a ray from intersection
-		glm::vec3 wi = sampleHemisphere();
-		glm::vec3 brdf = sampleBSDF(payload, wi, wo);
-
-		float cosTheta = glm::dot(wi, payload.WorldNormal);
-		factor *= brdf * glm::abs(cosTheta);
-
-		// Bounce
-		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f; // Offset the origin a bit to avoid self intersection
-		ray.Direction = wi;
-
-		// Russian Roulette
-		if (bounce > 3) {
-			float p = glm::max(factor.x, glm::max(factor.y, factor.z));
-			if (Walnut::Random::Float() > p)
-				break;
-			factor /= p;
-		}
+		rayColor *= EvaluateBSDF(payload, rInbound, ray.Direction);
 	}
 
 	return glm::vec4(radiance, 1.0f);
@@ -160,9 +132,9 @@ Renderer::HitPayLoad Renderer::TraceRay(const Ray& ray)
 
 
 	// First we need to find the closest shape that intersects with the ray
-	for (size_t i=0; i < m_ActiveScene->shapes.size(); i++) 
+	for (size_t i=0; i < m_ActiveScene->Shapes.size(); i++)
 	{
-		Shape* shape = m_ActiveScene->shapes[i];
+		Shape* shape = m_ActiveScene->Shapes[i];
 		float distance = shape->Intersect(ray);
 
 		if (distance < 0.0f)
@@ -175,10 +147,11 @@ Renderer::HitPayLoad Renderer::TraceRay(const Ray& ray)
 	}
 
 	// Check if we hit a light source
-	for (size_t j = 0; j < m_ActiveScene->lights.size(); j++)
+	for (size_t j = 0; j < m_ActiveScene->Lights.size(); j++)
 	{
-		Light light = m_ActiveScene->lights[j];
-		float distance = light.shape->Intersect(ray);
+		Light* light = m_ActiveScene->Lights[j];
+		Shape* shape = light->Shape;
+		float distance = light->Shape->Intersect(ray);
 		if (distance < 0.0f)
 			continue;
 		if (distance > 0.0f && distance < hitDistance) {
@@ -213,12 +186,12 @@ Renderer::HitPayLoad Renderer::ClosestHit(const Ray& ray, float hitDistance, int
 	if (lightHit) 
 	{
 		payload.LightHit = true;
-		closestShape = m_ActiveScene->lights[objectIndex].shape;
+		closestShape = m_ActiveScene->Lights[objectIndex]->Shape;
 	} 
 	else 
 	{
 		payload.LightHit = false;
-		closestShape = m_ActiveScene->shapes[objectIndex];
+		closestShape = m_ActiveScene->Shapes[objectIndex];
 	}
 
 	glm::vec3 origin = ray.Origin - closestShape->Position;
@@ -231,34 +204,11 @@ Renderer::HitPayLoad Renderer::ClosestHit(const Ray& ray, float hitDistance, int
 }
 
 
-glm::vec3 Renderer::sampleBSDF(Renderer::HitPayLoad payload, glm::vec3 inboundRay, glm::vec3 outboundRay) {
+glm::vec3 Renderer::EvaluateBSDF(Renderer::HitPayLoad payload, glm::vec3 inboundRay, glm::vec3 outboundRay) {
 	// Lambert
+	const Shape* shape = m_ActiveScene->Shapes[payload.ObjectIndex];
+	Material* material = m_ActiveScene->Materials[shape->MaterialIndex];
 
-	const Shape* shape = m_ActiveScene->shapes[payload.ObjectIndex];
-	glm::vec3 shapeColor = m_ActiveScene->materials[shape->MaterialIndex].Albedo;
-
-	return shapeColor / glm::pi<float>();
-}
-
-
-glm::vec3 Renderer::sampleLight()
-{
-
-	return m_ActiveScene->lights[0].Color;
-}
-
-
-glm::vec3 Renderer::sampleHemisphere() {
-
-	float theta = glm::acos(Walnut::Random::Float());
-	float phi = Walnut::Random::Float() * 2.0f * glm::pi<float>();
-
-	// Convert to cartesian
-	glm::vec3 direction {
-		glm::sin(theta) * glm::cos(phi),
-		glm::sin(theta) * glm::sin(phi),
-		glm::cos(theta)
-	};
-
-	return direction;
+	glm::vec3 color = material->EvaluateBSDF(payload.WorldNormal, inboundRay, outboundRay);
+	return color;
 }
