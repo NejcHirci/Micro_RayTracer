@@ -104,10 +104,10 @@ glm::mat4 Utils::BuildRotateTranslate(glm::vec3 rotAng, glm::vec3 translate)
 		glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}
 	};
 
-	mat = glm::rotate(mat, glm::radians(rotAng.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	mat = glm::rotate(mat, glm::radians(rotAng.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	mat = glm::translate(mat, translate);
 	mat = glm::rotate(mat, glm::radians(rotAng.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	mat = glm::translate(mat, -translate);
+	mat = glm::rotate(mat, glm::radians(rotAng.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	mat = glm::rotate(mat, glm::radians(rotAng.x), glm::vec3(1.0f, 0.0f, 0.0f));
 	
 
 	return mat;

@@ -13,6 +13,7 @@ struct Shape
 
 	virtual float Intersect(const Ray& ray) = 0;
 	virtual float Area() = 0;
+	virtual glm::vec3 GetNormal(glm::vec3 p) = 0;
 
 
 	glm::vec3 Position = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -20,12 +21,6 @@ struct Shape
 	glm::mat4 ObjectToWorld = glm::mat4(0.0f);
 	glm::mat4 WorldToObject = glm::mat4(0.0f);
 	int MaterialIndex = 0;
-
-protected:
-	bool SameHemisphere(glm::vec3 norm) { return glm::dot(Normal, norm) > 0; }
-
-protected:
-	glm::vec3 Normal = glm::vec3(0.0f, 1.0f, 0.0f);
 };
 
 struct Sphere : public Shape
@@ -34,13 +29,12 @@ struct Sphere : public Shape
 	{
 		Rotation = rot;
 		Position = pos;
-		Normal = Utils::ApplyNormal(ObjectToWorld, Normal);
-		ObjectToWorld = Utils::BuildRotateTranslate(Rotation, Position);
-		WorldToObject = glm::inverse(ObjectToWorld);
 	}
 
 	float Intersect(const Ray& ray) override;
 	float Area() { return 4 * glm::pi<float>() * Radius * Radius; }
+	glm::vec3 GetNormal(glm::vec3 p) { return glm::normalize(p - Position); };
+	
 	float Radius = 0.5f;
 };
 
@@ -50,14 +44,16 @@ struct Quad : public Shape
 	{
 		Rotation = rot;
 		Position = pos;
-		Normal = Utils::ApplyNormal(ObjectToWorld, Normal);
 		ObjectToWorld = Utils::BuildRotateTranslate(Rotation, Position);
 		WorldToObject = glm::inverse(ObjectToWorld);
+		Normal = Utils::ApplyNormal(ObjectToWorld, Normal);
 	}
 
 	float Intersect(const Ray& ray) override;
 	float Area() { return width * height; }
+	glm::vec3 GetNormal(glm::vec3 p) { return Normal; };
 	
 	float width = 10.0f;
 	float height = 10.0f;
+	glm::vec3 Normal = { 0.0f, 1.0f, 0.0f };
 };

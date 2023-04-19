@@ -11,8 +11,8 @@ void Scene::CreateScene()
 	
 	// Pink diffuse 0
 	PerfectSpecular* specular = new PerfectSpecular();
-	specular->fresnel1 = 1.0f;
-	specular->fresnel2 = 1.5f;
+	specular->fresnel1 = 1.5f;
+	specular->fresnel2 = 1.0f;
 	Materials.push_back(specular);
 
 	// Green Diffuse 1
@@ -45,7 +45,7 @@ void Scene::CreateScene()
 	// Shape 1
 	Sphere* sphere1 = new Sphere(glm::vec3{ -1.7f, 0.8f, -1.0f }, glm::vec3(0.0f));
 	sphere1->Radius = 0.8f;
-	sphere1->MaterialIndex = 0;
+	sphere1->MaterialIndex = 1;
 	Shapes.push_back(sphere1);
 
 	// Shape 2
@@ -54,7 +54,7 @@ void Scene::CreateScene()
 	sphere2->MaterialIndex = 4;
 	Shapes.push_back(sphere2);
 
-	// Shape 3
+	//// Shape 3
 	Sphere* sphere3 = new Sphere(glm::vec3{ 1.7f, 0.8f, 1.0f }, glm::vec3(0.0f));
 	sphere3->Radius = 0.8f;
 	sphere3->MaterialIndex = 0;
@@ -68,40 +68,38 @@ void Scene::CreateScene()
 	Shapes.push_back(quad);
 
 	////// Shape 3 - Back
-	Quad* back = new Quad(glm::vec3{ 0.0f, 2.5f, -2.5f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+	Quad* back = new Quad(glm::vec3{ 0.0f, 2.5f, -2.5f }, glm::vec3{ -90.0f, 0.0f, 0.0f });
 	back->width = 5.0f;
 	back->height = 5.0f;
 	back->MaterialIndex = 3;
 	Shapes.push_back(back);
 
 	//// Shape 4 - Left
-	Quad* left = new Quad(glm::vec3{ 2.5f, 2.5f, 0.0f }, glm::vec3{ 0.0f, 0.0f, 90.0f });
+	Quad* left = new Quad(glm::vec3{ 2.5f, 2.5f, 0.0f }, glm::vec3{ 0.0f, 0.0f, -90.0f });
 	left->width = 5.0f;
 	left->height = 5.0f;
 	left->MaterialIndex = 1;
 	Shapes.push_back(left);
 
 	//// Shape 5 - Right
-	Quad* right = new Quad(glm::vec3{ -2.5f, 2.5f, 0.0f }, glm::vec3{ 0.0f, 0.0f, -90.0f });
+	Quad* right = new Quad(glm::vec3{ -2.5f, 2.5f, 0.0f }, glm::vec3{ 0.0f, 0.0f, 90.0f });
 	right->width = 5.0f;
 	right->height = 5.0f;
 	right->MaterialIndex = 2;
 	Shapes.push_back(right);
 
 	//// Shape 6 - Ceiling
-	Quad* ceiling = new Quad(glm::vec3{ 0.0f, 5.0f, 0.0f }, glm::vec3{ 0.0f, 0.0f, 0.0f });
+	Quad* ceiling = new Quad(glm::vec3{ 0.0f, 5.0f, 0.0f }, glm::vec3{ 180.0f, 0.0f, 0.0f });
 	ceiling->width = 5.0f;
 	ceiling->height = 5.0f;
 	ceiling->MaterialIndex = 3;
 	Shapes.push_back(ceiling);
 
 	// Shape 7 - Front
-	//Quad* front = new Quad();
-	//front->Position = { 0.0f, 2.5f, 2.5f };
-	//front->Rotation = { -90.0f, 0.0f, 0.0f };
+	//Quad* front = new Quad(glm::vec3{ 0.0f, 2.5f, 2.5f }, glm::vec3{90.0f, 0.0f, 0.0f});
 	//front->width = 5.0f;
 	//front->height = 5.0f;
-	//front->MaterialIndex = 1;
+	//front->MaterialIndex = 3;
 	//Shapes.push_back(front);
 
 
@@ -109,10 +107,15 @@ void Scene::CreateScene()
 	// Basic diffuse Light
 	DiffuseAreaLight* diffuseLight = new DiffuseAreaLight();
 	diffuseLight->Color = { 1.0f, 1.0f, 1.0f };
-	diffuseLight->Intensity = 500.0f;
+	diffuseLight->Intensity = 100.0f;
 
-	Sphere* lightShape = new Sphere(glm::vec3{ 0.0f, 5.0f, 0.0f }, glm::vec3{0.0f,0.0f,0.0f});
-	lightShape->Radius = 0.3f;
+	// Light Shape sphere
+	//Sphere* lightShape = new Sphere(glm::vec3{ 0.0f, 4.5f, 0.0f }, glm::vec3{0.0f,0.0f,0.0f});
+	//lightShape->Radius = 0.1f;
+	//diffuseLight->Shape = lightShape;
+	Quad* lightShape = new Quad(glm::vec3{ 0.0f, 4.99f, 0.0f }, glm::vec3{ 180.0f, 0.0f, 0.0f });
+	lightShape->width = 1.0f;
+	lightShape->height = 1.0f;
 	diffuseLight->Shape = lightShape;
 
 	Lights.push_back(diffuseLight);

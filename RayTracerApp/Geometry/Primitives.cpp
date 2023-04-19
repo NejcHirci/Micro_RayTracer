@@ -6,12 +6,10 @@
 // Define Intersection functions
 float Sphere::Intersect(const Ray& ray)
 {
-	// Transform ray to sphere space
-	glm::vec3 origin = Utils::ApplyPoint(ObjectToWorld, ray.Origin);
-	glm::vec3 direction = Utils::ApplyVector(ObjectToWorld, ray.Direction);
-	
-	float a = glm::dot(direction, direction);
-	float b = 2.0f * glm::dot(origin, direction);
+	glm::vec3 origin = ray.Origin - Position;
+
+	float a = glm::dot(ray.Direction, ray.Direction);
+	float b = 2.0f * glm::dot(origin, ray.Direction);
 	float c = glm::dot(origin, origin) - Radius * Radius;
 
 	// Discriminant
@@ -28,11 +26,13 @@ float Sphere::Intersect(const Ray& ray)
 
 float Quad::Intersect(const Ray& ray)
 {
+	// Jump out if not facing the plane
+	if (glm::dot(Normal, -ray.Direction) < 0.0f) return -1.0f;
 
-	glm::vec3 origin = Utils::ApplyPoint(ObjectToWorld, ray.Origin);
-	glm::vec3 direction = Utils::ApplyVector(ObjectToWorld, ray.Direction);
+	glm::vec3 origin = Utils::ApplyPoint(WorldToObject, ray.Origin);
+	glm::vec3 direction = Utils::ApplyVector(WorldToObject, ray.Direction);
 
-	if (direction.y == 0.0f) return -1.0f;
+	if (direction.z == 0.0f) return -1.0f;
 
 	float t = -origin.y / direction.y;
 

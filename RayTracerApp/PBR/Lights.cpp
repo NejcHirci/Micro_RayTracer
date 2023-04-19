@@ -6,7 +6,7 @@
 
 glm::vec3 DiffuseAreaLight::LightEmission(glm::vec3 norm, glm::vec3 wi) 
 {
-	return Color * Intensity;
+	return (glm::dot(norm, wi) > 0) ? Color * Intensity : glm::vec3(0.0f);
 }
 
 Ray DiffuseAreaLight::SampleLightRay(glm::vec3 point, float r)
@@ -22,15 +22,17 @@ Ray DiffuseAreaLight::SampleLightRay(glm::vec3 point, float r)
 	return ray;
 }
 
-float DiffuseAreaLight::CalculatePdf(glm::vec3 rayDirection, glm::vec3 objectPosition, glm::vec3 lightNorm, glm::vec3 lightPos)
+float DiffuseAreaLight::CalculatePdf(glm::vec3 objNormal, glm::vec3 objPosition, glm::vec3 lightNorm, glm::vec3 lightPos)
 {
-	float distance = glm::length(lightPos - objectPosition);
+	float distance = glm::length(Shape->Position - objPosition);
 	distance *= distance;
 
-	float cosAlpha = glm::dot(lightNorm, rayDirection);
+	float cosAlpha = glm::dot(lightNorm, objNormal);
 
 	float area = Shape->Area();
 
-	return 1 / distance;
+	if (cosAlpha == 0.0f) return 0.0f;
+
+	return distance / (glm::pi<float>() * cosAlpha);
 }
 
