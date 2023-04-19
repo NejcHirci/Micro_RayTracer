@@ -9,6 +9,9 @@
 #include <glm/glm.hpp>
 
 
+// TODO:  Support for light sampling with specular materials.
+
+
 class Renderer
 {
 public:
@@ -46,8 +49,8 @@ private:
 	HitPayLoad TraceRay(const Ray& ray);
 	HitPayLoad ClosestHit(const Ray& ray, float hitDistance, int objectIndex, bool lightHit);
 	HitPayLoad Miss(const Ray& ray);
-
-	glm::vec3 Renderer::EvaluateBSDF(Renderer::HitPayLoad payload, glm::vec3 inboundRay, glm::vec3 outboundRay);
+	glm::vec3 Renderer::EvaluateDirectIllumination(Renderer::HitPayLoad payload);
+	glm::vec3 Renderer::SampleDirection(Renderer::HitPayLoad payload, glm::vec3 ro);
 
 private:
 	Settings m_Settings;

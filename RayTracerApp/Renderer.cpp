@@ -74,49 +74,54 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 
 	Ray ray;
 	ray.Origin = m_ActiveCamera->GetPosition();
-	//ray.Direction = m_ActiveCamera->GetRayDirections()[y * m_RenderImage->GetWidth() + x];
+	ray.Direction = m_ActiveCamera->GetRayDirections()[y * m_RenderImage->GetWidth() + x];
 
-
-	float u = ((float)x + Walnut::Random::Float()) / (float)m_RenderImage->GetWidth();
-	float v = ((float)y + Walnut::Random::Float()) / (float)m_RenderImage->GetHeight();
-	glm::vec2 coord = { u, v };
-	coord = coord * 2.0f - 1.0f; // -1 -> 1
-	glm::vec4 target = m_ActiveCamera->GetInverseProjection() * glm::vec4(coord.x, coord.y, 1, 1);
-	ray.Direction = glm::vec3(m_ActiveCamera->GetInverseView() * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0)); // World space
-	ray.Direction = glm::normalize(ray.Direction);
-
-	int bounces = 1000;
+	int bounces = 15;
 
 	glm::vec3 radiance(0.0f);
 	glm::vec3 rayColor(1.0f);
 
+	bool specularBounce = false;
+	glm::vec3 newDir;
+
 	for (int bounce = 0; bounce < bounces; bounce++)
 	{
+		// Step one we should intersect ray with scene
 		Renderer::HitPayLoad payload = TraceRay(ray);
 
-		if (payload.HitDistance < 0) {
-
-			glm::vec3 skyColor = glm::vec3(0.5f, 0.7f, 1.0f);
-			auto t = 0.5f * (ray.Direction.y + 1.0f);
-			radiance = rayColor * (glm::mix(glm::vec3(1.0f), skyColor, t)) * 0.1f;
+		if (payload.HitDistance <= 0) {
+			// Set Sky color
+			float t = 0.5f * (ray.Direction.y + 1.0f);
+			radiance += rayColor * (glm::vec3(0.5f, 0.7f, 1.0f) * t + (1.0f - t) * glm::vec3(0.7f)) * 0.1f;
 			break;
 		}
 
-		glm::vec3 rInbound = -ray.Direction;
+		if (payload.LightHit) {
+			radiance += rayColor * m_ActiveScene->Lights[payload.ObjectIndex]->LightEmission(payload.WorldNormal, -ray.Direction);
+			break;
+		}
+
+		// Add direct illumination
+		// radiance += rayColor * EvaluateDirectIllumination(payload);
+
+		Shape* shape = m_ActiveScene->Shapes[payload.ObjectIndex];
+		Material* material = m_ActiveScene->Materials[shape->MaterialIndex];
+
+		newDir = material->SampleBSDF(payload.WorldNormal, ray.Direction);
+
+		// Only if same hemisphere
+		rayColor *= material->EvaluateBSDF(shape, payload.WorldNormal, -ray.Direction, newDir);
 
 		ray.Origin = payload.WorldPosition;
-		ray.Direction = Utils::UniformSampleHemisphere();
-		ray.Direction *= glm::sign(glm::dot(payload.WorldNormal, ray.Direction));
+		ray.Direction = newDir;
 
-		if (payload.LightHit) 
-		{
-			glm::vec3 emmittedLight = m_ActiveScene->Lights[0]->SamplePoint();
-			radiance += rayColor * emmittedLight;
-
-			break;
+		// Russian roulette
+		if (bounce > 3) {
+			float p = glm::max(0.01f, 1.0f - glm::max(rayColor.x, glm::max(rayColor.y, rayColor.z)));
+			if (Walnut::Random::Float() < p)
+				break;
+			rayColor /= 1.0f - p;
 		}
-
-		rayColor *= EvaluateBSDF(payload, rInbound, ray.Direction);
 	}
 
 	return glm::vec4(radiance, 1.0f);
@@ -204,11 +209,54 @@ Renderer::HitPayLoad Renderer::ClosestHit(const Ray& ray, float hitDistance, int
 }
 
 
-glm::vec3 Renderer::EvaluateBSDF(Renderer::HitPayLoad payload, glm::vec3 inboundRay, glm::vec3 outboundRay) {
-	// Lambert
-	const Shape* shape = m_ActiveScene->Shapes[payload.ObjectIndex];
-	Material* material = m_ActiveScene->Materials[shape->MaterialIndex];
+glm::vec3 Renderer::EvaluateDirectIllumination(Renderer::HitPayLoad payload)
+{
+	// Add direct illumination from lights for path reuse
+	Light* light = m_ActiveScene->Lights[0];
+	Ray shadowRay = light->SampleLightRay(payload.WorldNormal, ((Sphere*)(light->Shape))->Radius);
+	
 
-	glm::vec3 color = material->EvaluateBSDF(payload.WorldNormal, inboundRay, outboundRay);
-	return color;
+
+	// We already know which light we are hitting so we should just check for intersections with shapes
+	// First we need to find the closest shape that intersects with the ray
+	float distance;
+	for (size_t i = 0; i < m_ActiveScene->Shapes.size(); i++)
+	{
+		Shape* shape = m_ActiveScene->Shapes[i];
+		distance = shape->Intersect(shadowRay);
+
+		if (distance > 0.0f) return glm::vec3(0.0f);		
+	}
+
+	// Get intersection with light
+	distance = light->Shape->Intersect(shadowRay);
+
+	// Compute intersection normal
+	glm::vec3 lightNorm = shadowRay.Origin - light->Shape->Position + shadowRay.Direction * distance;
+	lightNorm = glm::normalize(lightNorm);
+
+	// Check if we are in the same hemisphere
+	if (glm::dot(lightNorm, shadowRay.Direction) <= 0.0f) return glm::vec3(0.0f);
+
+	float pdf = 1 / glm::pow(glm::length(light->Shape->Position - payload.WorldPosition), 2.0f);
+
+	return light->LightEmission(payload.WorldNormal, shadowRay.Direction) * pdf;
+}
+
+glm::vec3 Renderer::SampleDirection(Renderer::HitPayLoad payload, glm::vec3 ro)
+{
+	Shape* shape = m_ActiveScene->Shapes[payload.ObjectIndex];
+	Material* material = m_ActiveScene->Materials[shape->MaterialIndex];
+	
+	// Convert ro to local space
+	ro = Utils::ApplyVector(shape->WorldToObject, ro);
+
+	// Sample the new local direction
+	glm::vec3 newDir = material->SampleBSDF(payload.WorldNormal, ro);
+
+	// Convert back to world space
+	newDir = Utils::ApplyVector(shape->ObjectToWorld, newDir);
+
+
+	return newDir;
 }
