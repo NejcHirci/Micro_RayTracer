@@ -1,7 +1,9 @@
 #include <iostream>
+#include <Walnut/Random.h>
 
 #include "Primitives.h"
 #include "../Utils.h"
+
 
 // Define Intersection functions
 float Sphere::Intersect(const Ray& ray)
@@ -22,6 +24,26 @@ float Sphere::Intersect(const Ray& ray)
 	float t0 = (-b - glm::sqrt(d)) / (2.0f * a);
 
 	return t0;
+}
+
+glm::vec3 Sphere::UniformSample()
+{
+	float u = Walnut::Random::Float();
+	float v = Walnut::Random::Float();
+
+	// Convert to spherical coordinates
+	float theta = 2 * glm::pi<float>() * u;
+	float phi = glm::acos(2 * v - 1);
+
+	// Convert to Cartesian coordinates
+	glm::vec3 localpoint = {
+		Radius * glm::sin(phi) * glm::cos(theta),
+		Radius * glm::sin(phi) * glm::sin(theta),
+		Radius * glm::cos(phi)
+	};
+
+	// Convert to world space
+	return Position + localpoint;
 }
 
 float Quad::Intersect(const Ray& ray)
@@ -45,3 +67,20 @@ float Quad::Intersect(const Ray& ray)
 
 	return t;
 }
+
+glm::vec3 Quad::UniformSample()
+{
+	float u = Walnut::Random::Float();
+	float v = Walnut::Random::Float();
+
+	glm::vec3 localPoint = glm::vec3{
+		(u - 0.5f) * width,
+		0.0f,
+		(v - 0.5f) * height
+	};
+
+	// Convert to world space
+	return Utils::ApplyPoint(ObjectToWorld, localPoint);
+}
+
+

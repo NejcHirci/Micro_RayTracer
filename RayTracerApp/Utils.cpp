@@ -62,19 +62,21 @@ glm::vec3 Utils::CartesianToSpherical(glm::vec3 ro)
 	// r, theta, phi
 	return glm::vec3{
 		1.0f,
-		std::atan2f(glm::sqrt(ro.x * ro.x + ro.y * ro.y), ro.z),
-		std::atan2f(ro.y, ro.z)
+		glm::acos(ro.y),
+		std::atan2f(ro.z, ro.x)
 	};
 }
 
 
 uint32_t Utils::ConvertToRGBA(const glm::vec4& color)
 {
+	// Use gamma correction 2.2
+	glm::vec4 col = glm::pow(color, glm::vec4(1.0f / 2.2f));
 	
-	uint8_t r = (uint8_t)(glm::sqrt(color.r) * 255.0f);
-	uint8_t g = (uint8_t)(glm::sqrt(color.g) * 255.0f);
-	uint8_t b = (uint8_t)(glm::sqrt(color.b) * 255.0f);
-	uint8_t a = (uint8_t)(color.a * 255.0f);
+	uint8_t r = (uint8_t)(glm::sqrt(col.r) * 255.0f);
+	uint8_t g = (uint8_t)(glm::sqrt(col.g) * 255.0f);
+	uint8_t b = (uint8_t)(glm::sqrt(col.b) * 255.0f);
+	uint8_t a = (uint8_t)(col.a * 255.0f);
 
 	uint32_t result = (a << 24) | (b << 16) | (g << 8) | r;
 	return result;

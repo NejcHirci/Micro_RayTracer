@@ -34,24 +34,30 @@ void Scene::CreateScene()
 	Materials.push_back(lambert4);
 
 
-	// Blue diffuse 4
+	// Green Oren Nayar diffuse 4
 	OrenNayar* orenNayar = new OrenNayar();
-	orenNayar->Albedo = { 0.0f, 0.0f, 1.0f };
+	orenNayar->Albedo = { 0.0f, 1.0f, 0.0f };
 	orenNayar->Roughness = 0.9f;
 	orenNayar->IsSpecular = false;
 	Materials.push_back(orenNayar);
+
+	// Black Diffuse 5
+	Lambert* lambert6 = new Lambert();
+	lambert6->Albedo = { 0.0f, 0.0f, 0.0f };
+	lambert6->IsSpecular = false;
+	Materials.push_back(lambert6);
 
 
 	// Shape 1
 	Sphere* sphere1 = new Sphere(glm::vec3{ -1.7f, 0.8f, -1.0f }, glm::vec3(0.0f));
 	sphere1->Radius = 0.8f;
-	sphere1->MaterialIndex = 1;
+	sphere1->MaterialIndex = 4;
 	Shapes.push_back(sphere1);
 
 	// Shape 2
 	Sphere* sphere2 = new Sphere(glm::vec3{ 0.0f, 0.8f, 0.0f }, glm::vec3(0.0f));
 	sphere2->Radius = 0.8f;
-	sphere2->MaterialIndex = 4;
+	sphere2->MaterialIndex = 1;
 	Shapes.push_back(sphere2);
 
 	//// Shape 3
@@ -95,19 +101,10 @@ void Scene::CreateScene()
 	ceiling->MaterialIndex = 3;
 	Shapes.push_back(ceiling);
 
-	// Shape 7 - Front
-	//Quad* front = new Quad(glm::vec3{ 0.0f, 2.5f, 2.5f }, glm::vec3{90.0f, 0.0f, 0.0f});
-	//front->width = 5.0f;
-	//front->height = 5.0f;
-	//front->MaterialIndex = 3;
-	//Shapes.push_back(front);
-
-
-
 	// Basic diffuse Light
 	DiffuseAreaLight* diffuseLight = new DiffuseAreaLight();
 	diffuseLight->Color = { 1.0f, 1.0f, 1.0f };
-	diffuseLight->Intensity = 100.0f;
+	diffuseLight->Intensity = 5.0f;
 
 	// Light Shape sphere
 	//Sphere* lightShape = new Sphere(glm::vec3{ 0.0f, 4.5f, 0.0f }, glm::vec3{0.0f,0.0f,0.0f});
@@ -120,69 +117,3 @@ void Scene::CreateScene()
 
 	Lights.push_back(diffuseLight);
 }
-
-//void Scene::CreateScene()
-//{
-//	// Materials
-//	// Green Lambert
-//	Lambert* lambert = new Lambert();
-//	lambert->Albedo = { 0.0f, 1.0f, 0.0f };
-//	Materials.push_back(lambert);
-//
-//	// floor
-//	Quad *floor = new Quad();
-//	floor->width = 5.0f;
-//	floor->height = 5.0f;
-//	floor->ObjectToWorld = Utils::BuildRotateTranslate({ 90.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
-//	floor->WorldToObject = glm::inverse(floor->ObjectToWorld);
-//	floor->MaterialIndex = 0;	
-//	Shapes.push_back(floor);
-//
-//	// left wall
-//	Quad* left = new Quad();
-//	left->width = 5.0f;
-//	left->height = 5.0f;
-//	left->ObjectToWorld = Utils::BuildRotateTranslate({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
-//	left->WorldToObject = glm::inverse(left->ObjectToWorld);
-//	left->MaterialIndex = 0;
-//	Shapes.push_back(left);
-//
-//	// right wall
-//	Quad *right = new Quad();
-//	right->width = 5.0f;
-//	right->height = 5.0f;
-//	right->ObjectToWorld = Utils::BuildRotateTranslate({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
-//	right->WorldToObject = glm::inverse(right->ObjectToWorld);
-//	right->MaterialIndex = 0;
-//	Shapes.push_back(right);
-//
-//	// back wall
-//	Quad * back = new Quad();
-//	back->width = 5.0f;
-//	back->height = 5.0f;
-//	back->ObjectToWorld = Utils::BuildRotateTranslate({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
-//	back->WorldToObject = glm::inverse(back->ObjectToWorld);
-//	back->MaterialIndex = 0;
-//	Shapes.push_back(back);
-//
-//	// ceiling
-//	Quad *top = new Quad();
-//	top->width = 5.0f;
-//	top->height = 5.0f;
-//	top->ObjectToWorld = Utils::BuildRotateTranslate({ 90.0f, 0.0f, 0.0f }, { 0.0f, 5.0f, 0.0f });
-//	top->WorldToObject = glm::inverse(top->ObjectToWorld);
-//	top->MaterialIndex = 0;
-//	Shapes.push_back(top);
-//
-//	// Basic diffuse Light
-//	DiffuseAreaLight* diffuseLight = new DiffuseAreaLight();
-//	diffuseLight->Color = { 1.0f, 1.0f, 1.0f };
-//	diffuseLight->Intensity = 4.0f;
-//	
-//	Sphere* lightShape = new Sphere();
-//	lightShape->Position = { -1.0f, 3.0f, 0.0f };
-//	lightShape->Radius = 1.0f;
-//	diffuseLight->Shape = lightShape;
-//	
-//	Lights.push_back(diffuseLight);
-//}

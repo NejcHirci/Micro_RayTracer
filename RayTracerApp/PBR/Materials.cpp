@@ -45,17 +45,35 @@ glm::vec3 OrenNayar::EvaluateBSDF(Shape* shape, glm::vec3 worldNormal, glm::vec3
 	glm::vec3 sphericalRo = Utils::CartesianToSpherical(ro);
 	glm::vec3 sphericalRi = Utils::CartesianToSpherical(ri);
 
-	float a = 1.0f - 0.5f * (Roughness * Roughness) / (Roughness * Roughness + 0.33f);
-	float b = 0.45f * (Roughness * Roughness) / (Roughness * Roughness + 0.09f);
+	float sigma2 = Roughness * Roughness;
 
-	float alpha = glm::max(sphericalRo.y, sphericalRi.y);
-	float beta = glm::min(sphericalRo.y, sphericalRi.y);
+	float A = 1.0f - (sigma2 / (2.0f * (sigma2 + 0.33f)));
+	float B = 0.45f * sigma2 / (sigma2 + 0.09f);
 
-	float factor = glm::max(0.0f, glm::cos(sphericalRi.z - sphericalRo.z));
+	float sinThetaI = glm::sin(sphericalRi.y);
+	float sinThetaO = glm::sin(sphericalRo.y);
 
-	float pdf = CalculatePdf(ro, ri);
+	float maxCos = 0.0f;
+	if (sinThetaI > 1e-4f && sinThetaO > 1e-4f) {
+		float sinPhiI = glm::sin(sphericalRi.z);
+		float cosPhiI = glm::cos(sphericalRi.z);
+		float sinPhiO = glm::sin(sphericalRo.z);
+		float cosPhiO = glm::cos(sphericalRo.z);
+		float dCos = cosPhiI * cosPhiO + sinPhiI * sinPhiO;
+		maxCos = glm::max(0.0f, dCos);
+	}
 
-	return Albedo * (a + b * factor * glm::sin(alpha) * glm::tan(beta)) * glm::one_over_pi<float>();
+	float sinAlpha, tanBeta;
+	if (glm::abs(sphericalRi.y - sphericalRo.y) > 1e-4f) {
+		sinAlpha = glm::min(sphericalRi.y, sphericalRo.y);
+		tanBeta = glm::max(sphericalRi.y, sphericalRo.y) / glm::abs(sphericalRi.y - sphericalRo.y);
+	}
+	else {
+		sinAlpha = sinThetaI;
+		tanBeta = 1.0f;
+	}
+
+	return Albedo * glm::one_over_pi<float>() * (A + B * maxCos * sinAlpha * tanBeta);
 }
 
 
@@ -84,5 +102,9 @@ glm::vec3 PerfectSpecular::EvaluateBSDF(Shape * shape, glm::vec3 worldNormal, gl
 
 glm::vec3 PerfectSpecular::SampleBSDF(glm::vec3 norm, glm::vec3 ri)
 {
+	glm::vec3 newDir = glm::reflect(ri, norm);
+
+	// Compute based on Fre
+
 	return glm::reflect(ri, norm);
 }

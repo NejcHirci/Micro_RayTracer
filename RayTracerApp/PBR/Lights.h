@@ -4,12 +4,11 @@
 
 #include "../Geometry/Primitives.h"
 
-// TODO: Implement physically based spherical lights.
 
 struct Light
 {
 	virtual glm::vec3 LightEmission(glm::vec3 norm, glm::vec3 wi) = 0;
-	virtual Ray SampleLightRay(glm::vec3 point, float r) = 0;
+	virtual Ray SampleLightRay(glm::vec3 point) = 0;
 	virtual float CalculatePdf(glm::vec3 objectNorm, glm::vec3 objectPosition, glm::vec3 lightNorm, glm::vec3 lightPos) = 0;
 
 public:
@@ -22,6 +21,6 @@ struct DiffuseAreaLight : public Light
 {
 public:
 	glm::vec3 LightEmission(glm::vec3 norm, glm::vec3 wi) override;
-	Ray SampleLightRay(glm::vec3 point, float r) override;
+	Ray SampleLightRay(glm::vec3 point) override;
 	float CalculatePdf(glm::vec3 rayDirection, glm::vec3 objectPosition, glm::vec3 lightNorm, glm::vec3 lightPos) override;
 };

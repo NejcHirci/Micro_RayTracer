@@ -77,7 +77,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	ray.Origin = m_ActiveCamera->GetPosition();
 	ray.Direction = m_ActiveCamera->GetRayDirections()[y * m_RenderImage->GetWidth() + x];
 
-	int bounces = 15;
+	int bounces = 5;
 
 	glm::vec3 radiance(0.0f);
 	glm::vec3 rayColor(1.0f);
@@ -94,21 +94,18 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		// Step one we should intersect ray with scene
 		Renderer::HitPayLoad payload = TraceRay(ray);
 
-		if (payload.HitDistance <= 0) {
-			// Set Sky color
-			// float t = 0.5f * (ray.Direction.y + 1.0f);
-			// radiance += rayColor * (glm::vec3(0.5f, 0.7f, 1.0f) * t + (1.0f - t) * glm::vec3(0.7f)) * 0.1f;
-			break;
-		}
+		if (payload.HitDistance <= 0) { break; }
 
-		if (payload.LightHit) {
+		if (bounce == 0) {
+			if (payload.LightHit) {
 				radiance += rayColor * m_ActiveScene->Lights[payload.ObjectIndex]->LightEmission(payload.WorldNormal, -ray.Direction);
 				break;
+			}
 		}
 		
-
+		
 		// Add direct illumination
-		// radiance += rayColor * EvaluateDirectIllumination(payload);
+		radiance += rayColor * EvaluateDirectIllumination(payload);
 
 		Shape* shape = m_ActiveScene->Shapes[payload.ObjectIndex];
 		Material* material = m_ActiveScene->Materials[shape->MaterialIndex];
@@ -219,22 +216,23 @@ glm::vec3 Renderer::EvaluateDirectIllumination(Renderer::HitPayLoad payload)
 {
 	// Add direct illumination from lights for path reuse
 	Light* light = m_ActiveScene->Lights[0];
-	Ray shadowRay = light->SampleLightRay(payload.WorldNormal, ((Sphere*)(light->Shape))->Radius);
+	Ray shadowRay = light->SampleLightRay(payload.WorldPosition);
 	
-
-
 	// We already know which light we are hitting so we should just check for intersections with shapes
 	// First we need to find the closest shape that intersects with the ray
 	float distance;
 	for (size_t i = 0; i < m_ActiveScene->Shapes.size(); i++) {
 		Shape* shape = m_ActiveScene->Shapes[i];
 		distance = shape->Intersect(shadowRay);
-
-		if (distance > 0.0f) return glm::vec3(0.0f);		
 	}
 
+	if (distance > 0.0f) return glm::vec3(0.0f);
+
+	// Get Intersection
+	distance = light->Shape->Intersect(shadowRay);
+
 	// Compute intersection normal
-	glm::vec3 lightIntersectionPos = shadowRay.Origin + shadowRay.Direction * distance;
+	glm::vec3 lightIntersectionPos = shadowRay.Origin - shadowRay.Direction * distance;
 
 
 	glm::vec3 lightNormal = light->Shape->GetNormal(lightIntersectionPos);
@@ -242,9 +240,9 @@ glm::vec3 Renderer::EvaluateDirectIllumination(Renderer::HitPayLoad payload)
 	// Compute the pdf of the light
 	float pdf = light->CalculatePdf(payload.WorldNormal, payload.WorldPosition, lightNormal, lightIntersectionPos);
 
-	if (pdf == 0.0f) return glm::vec3(0.0f);
+	if (pdf <= 0.0f) return glm::vec3(0.0f);
 
-	return light->LightEmission(lightNormal, -shadowRay.Direction) / pdf;
+	return light->LightEmission(lightNormal, -shadowRay.Direction) / (pdf);
 }
 
 

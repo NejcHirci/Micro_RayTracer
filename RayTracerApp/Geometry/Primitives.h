@@ -14,6 +14,7 @@ struct Shape
 	virtual float Intersect(const Ray& ray) = 0;
 	virtual float Area() = 0;
 	virtual glm::vec3 GetNormal(glm::vec3 p) = 0;
+	virtual glm::vec3 UniformSample() = 0;
 
 
 	glm::vec3 Position = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -34,6 +35,7 @@ struct Sphere : public Shape
 	float Intersect(const Ray& ray) override;
 	float Area() { return 4 * glm::pi<float>() * Radius * Radius; }
 	glm::vec3 GetNormal(glm::vec3 p) { return glm::normalize(p - Position); };
+	glm::vec3 UniformSample() override;
 	
 	float Radius = 0.5f;
 };
@@ -52,6 +54,7 @@ struct Quad : public Shape
 	float Intersect(const Ray& ray) override;
 	float Area() { return width * height; }
 	glm::vec3 GetNormal(glm::vec3 p) { return Normal; };
+	glm::vec3 UniformSample() override;
 	
 	float width = 10.0f;
 	float height = 10.0f;
