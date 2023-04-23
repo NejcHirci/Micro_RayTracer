@@ -32,20 +32,21 @@ void Scene::CreateScene()
 
 
 	// White Oren Nayar diffuse 4
-	//OrenNayar* orenNayar1 = new OrenNayar();
-	//orenNayar1->Albedo = { 1.0f, 1.0f, 1.0f };
-	//orenNayar1->Roughness = 0.0f;
-	//Materials.push_back(orenNayar1);
+	OrenNayar* orenNayar1 = new OrenNayar();
+	orenNayar1->Albedo = { 1.0f, 1.0f, 1.0f };
+	orenNayar1->Roughness = 0.0f;
+	Materials.push_back(orenNayar1);
 
 	//// White Oren Nayar diffuse 5
-	//OrenNayar* orenNayar2 = new OrenNayar();
-	//orenNayar2->Albedo = { 1.0f, 1.0f, 1.0f };
-	//orenNayar2->Roughness = 0.5f;
-	//Materials.push_back(orenNayar2);
+	OrenNayar* orenNayar2 = new OrenNayar();
+	orenNayar2->Albedo = { 1.0f, 1.0f, 1.0f };
+	orenNayar2->Roughness = 0.5f;
+	Materials.push_back(orenNayar2);
 
-	//// Light Blue Oren Nayar diffuse 4
+	//// Light Blue Oren Nayar diffuse 6
 	OrenNayar* orenNayar3 = new OrenNayar();
-	orenNayar3->Albedo = { 0.0117f, 0.6627f, 0.9568f };
+	//orenNayar3->Albedo = { 0.0117f, 0.6627f, 0.9568f };
+	orenNayar3->Albedo = { 1.0f, 1.0f, 1.0f };
 	orenNayar3->Roughness = 0.9f;
 	Materials.push_back(orenNayar3);
 
@@ -58,19 +59,19 @@ void Scene::CreateScene()
 	// Shape 1
 	Sphere* sphere1 = new Sphere(glm::vec3{ -1.7f, 0.8f, 0.0f }, glm::vec3(0.0f));
 	sphere1->Radius = 0.8f;
-	sphere1->MaterialIndex = 0;
+	sphere1->MaterialIndex = 4;
 	Shapes.push_back(sphere1);
 
 	// Shape 2
 	Sphere* sphere2 = new Sphere(glm::vec3{ 0.0f, 0.8f, 0.0f }, glm::vec3(0.0f));
 	sphere2->Radius = 0.8f;
-	sphere2->MaterialIndex = 4;
+	sphere2->MaterialIndex = 5;
 	Shapes.push_back(sphere2);
 
 	//// Shape 3
 	Sphere* sphere3 = new Sphere(glm::vec3{ 1.7f, 0.8f, 0.0f }, glm::vec3(0.0f));
 	sphere3->Radius = 0.8f;
-	sphere3->MaterialIndex = 5;
+	sphere3->MaterialIndex = 6;
 	Shapes.push_back(sphere3);
 
 	//// Shape 3 - Floor
@@ -114,8 +115,8 @@ void Scene::CreateScene()
 	diffuseLight->Intensity = 5.0f;
 
 	// Light Shape sphere
-	//Sphere* lightShape = new Sphere(glm::vec3{ 0.0f, 4.0f, 0.0f }, glm::vec3{0.0f,0.0f,0.0f});
-	//lightShape->Radius = 0.1f;
+	//Sphere* lightShape = new Sphere(glm::vec3{ 0.0f, 2.5f, 9.0f }, glm::vec3{0.0f,0.0f,0.0f});
+	//lightShape->Radius = 0.3f;
 	//diffuseLight->Shape = lightShape;
 	Quad* lightShape = new Quad(glm::vec3{ 0.0f, 4.99f, 0.0f }, glm::vec3{ 180.0f, 0.0f, 0.0f });
 	lightShape->width = 1.0f;

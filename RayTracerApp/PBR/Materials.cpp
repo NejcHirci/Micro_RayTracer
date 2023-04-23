@@ -51,6 +51,14 @@ float Lambert::CalculatePdf(glm::vec3 ro, glm::vec3 ri)
 
 glm::vec3 OrenNayar::EvaluateBSDF(Shape* shape, glm::vec3 worldNormal, glm::vec3 ro, glm::vec3 ri)
 {
+	// Convert to ro and ri to local space
+	glm::vec3 tangent = glm::cross(worldNormal, ri);
+	glm::vec3 bitangent = glm::cross(worldNormal, tangent);
+	glm::mat3 worldToLocal = glm::transpose(glm::mat3(tangent, worldNormal, bitangent));
+
+	ro = worldToLocal * ro;
+	ri = worldToLocal * ri;
+
 	glm::vec3 sphericalRo = Utils::CartesianToSpherical(ro);
 	glm::vec3 sphericalRi = Utils::CartesianToSpherical(ri);
 
@@ -75,11 +83,11 @@ glm::vec3 OrenNayar::EvaluateBSDF(Shape* shape, glm::vec3 worldNormal, glm::vec3
 	float sinAlpha, tanBeta;
 	if (glm::abs(sphericalRi.y) > glm::abs(sphericalRo.x)) {
 		sinAlpha = sinThetaO;
-		tanBeta = sinThetaI / glm::abs(sphericalRi.y);
+		tanBeta = sinThetaI / glm::abs(glm::cos(sphericalRi.y));
 	}
 	else {
 		sinAlpha = sinThetaI;
-		tanBeta = sinThetaO / glm::abs(sphericalRo.y);
+		tanBeta = sinThetaO / glm::abs(glm::cos(sphericalRo.y));
 	}
 
 	return Albedo * glm::one_over_pi<float>() * (A + B * maxCos * sinAlpha * tanBeta);

@@ -94,8 +94,8 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		if (payload.HitDistance <= 0) 
 		{
 			// Skybox color based on y direction
-			//float t = 0.5f * (ray.Direction.y + 1.0f);
-			//radiance += rayColor * ( t * glm::vec3(0.5f, 0.7f, 1.0f) + (1-t) * glm::vec3(1.0f));
+			float t = 0.5f * (ray.Direction.y + 1.0f);
+			radiance += rayColor * ( t * glm::vec3(0.5f, 0.7f, 1.0f) + (1-t) * glm::vec3(1.0f));
 			break; 
 		}
 
