@@ -101,7 +101,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 
 		if (bounce == 0) {
 			if (payload.LightHit) {
-				//radiance += rayColor * m_ActiveScene->Lights[payload.ObjectIndex]->LightEmission(payload.WorldNormal, -ray.Direction);
+				radiance += rayColor * m_ActiveScene->Lights[payload.ObjectIndex]->LightEmission(payload.WorldNormal, -ray.Direction);
 				break;
 			}
 		}

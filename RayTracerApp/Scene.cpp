@@ -45,14 +45,14 @@ void Scene::CreateScene()
 
 	//// Light Blue Oren Nayar diffuse 4
 	OrenNayar* orenNayar3 = new OrenNayar();
-	orenNayar3->Albedo = { 1.0f, 1.0f, 0.9568f };
+	orenNayar3->Albedo = { 0.0117f, 0.6627f, 0.9568f };
 	orenNayar3->Roughness = 0.9f;
 	Materials.push_back(orenNayar3);
 
 	// Simple Metal Bronze 5
 	SimpleMetal* metal = new SimpleMetal();
-	metal->Albedo = { 0.0117f, 0.6627f, 0.2f };
-	metal->Roughness = 0.8f;
+	metal->Albedo = { 0.8f, 0.5f, 0.2f };
+	metal->Roughness = 0.5f;
 	Materials.push_back(metal);
 
 	// Shape 1
