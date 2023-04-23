@@ -26,6 +26,7 @@ public:
 	void OnResize(uint32_t width, uint32_t height);
 
 	std::shared_ptr<Walnut::Image> GetRenderImage() const { return m_RenderImage; }
+	uint32_t* GetRenderImageData() const { return m_RenderImageData; }
 
 	void ResetFrameIndex() { m_FrameIndex = 1; }
 	Settings& GetSettings() { return m_Settings; }

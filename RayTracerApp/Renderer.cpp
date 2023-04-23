@@ -77,14 +77,11 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	ray.Origin = m_ActiveCamera->GetPosition();
 	ray.Direction = m_ActiveCamera->GetRayDirections()[y * m_RenderImage->GetWidth() + x];
 
-	int bounces = 5;
+	int bounces = 20;
 
 	glm::vec3 radiance(0.0f);
 	glm::vec3 rayColor(1.0f);
 
-
-
-	bool specularBounce = false;
 	glm::vec3 newDir;
 	glm::vec3 f;
 	float pdf;
@@ -94,15 +91,20 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		// Step one we should intersect ray with scene
 		Renderer::HitPayLoad payload = TraceRay(ray);
 
-		if (payload.HitDistance <= 0) { break; }
+		if (payload.HitDistance <= 0) 
+		{
+			// Skybox color based on y direction
+			//float t = 0.5f * (ray.Direction.y + 1.0f);
+			//radiance += rayColor * ( t * glm::vec3(0.5f, 0.7f, 1.0f) + (1-t) * glm::vec3(1.0f));
+			break; 
+		}
 
 		if (bounce == 0) {
 			if (payload.LightHit) {
-				radiance += rayColor * m_ActiveScene->Lights[payload.ObjectIndex]->LightEmission(payload.WorldNormal, -ray.Direction);
+				//radiance += rayColor * m_ActiveScene->Lights[payload.ObjectIndex]->LightEmission(payload.WorldNormal, -ray.Direction);
 				break;
 			}
 		}
-		
 		
 		// Add direct illumination
 		radiance += rayColor * EvaluateDirectIllumination(payload);
@@ -217,7 +219,10 @@ glm::vec3 Renderer::EvaluateDirectIllumination(Renderer::HitPayLoad payload)
 	// Add direct illumination from lights for path reuse
 	Light* light = m_ActiveScene->Lights[0];
 	Ray shadowRay = light->SampleLightRay(payload.WorldPosition);
-	
+
+	// Move the ray origin a bit to avoid self intersection
+	shadowRay.Origin += payload.WorldNormal * 0.001f;
+
 	// We already know which light we are hitting so we should just check for intersections with shapes
 	// First we need to find the closest shape that intersects with the ray
 	float distance;

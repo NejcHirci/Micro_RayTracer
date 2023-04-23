@@ -2,6 +2,8 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/perpendicular.hpp>
 
+#include <Walnut/Random.h>
+
 #include "../Utils.h"
 #include "Materials.h"
 
@@ -40,6 +42,13 @@ glm::vec3 Lambert::SampleBSDF(glm::vec3 norm, glm::vec3 ri)
 }
 
 
+float Lambert::CalculatePdf(glm::vec3 ro, glm::vec3 ri)
+{
+	// Because we are using only cosine weighted sampling, the 
+	// cosine theta factor cancels out
+	return glm::dot(ro, ri) > 0 ? glm::one_over_pi<float>() : 0.0f;
+}
+
 glm::vec3 OrenNayar::EvaluateBSDF(Shape* shape, glm::vec3 worldNormal, glm::vec3 ro, glm::vec3 ri)
 {
 	glm::vec3 sphericalRo = Utils::CartesianToSpherical(ro);
@@ -64,13 +73,13 @@ glm::vec3 OrenNayar::EvaluateBSDF(Shape* shape, glm::vec3 worldNormal, glm::vec3
 	}
 
 	float sinAlpha, tanBeta;
-	if (glm::abs(sphericalRi.y - sphericalRo.y) > 1e-4f) {
-		sinAlpha = glm::min(sphericalRi.y, sphericalRo.y);
-		tanBeta = glm::max(sphericalRi.y, sphericalRo.y) / glm::abs(sphericalRi.y - sphericalRo.y);
+	if (glm::abs(sphericalRi.y) > glm::abs(sphericalRo.x)) {
+		sinAlpha = sinThetaO;
+		tanBeta = sinThetaI / glm::abs(sphericalRi.y);
 	}
 	else {
 		sinAlpha = sinThetaI;
-		tanBeta = 1.0f;
+		tanBeta = sinThetaO / glm::abs(sphericalRo.y);
 	}
 
 	return Albedo * glm::one_over_pi<float>() * (A + B * maxCos * sinAlpha * tanBeta);
@@ -93,18 +102,62 @@ glm::vec3 OrenNayar::SampleBSDF(glm::vec3 norm, glm::vec3 ri)
 	return glm::normalize(v);
 }
 
-
-glm::vec3 PerfectSpecular::EvaluateBSDF(Shape * shape, glm::vec3 worldNormal, glm::vec3 ro, glm::vec3 ri)
+float OrenNayar::CalculatePdf(glm::vec3 wo, glm::vec3 wi)
 {
-	return glm::vec3(1.0f);
+	// Because we are using only cosine weighted sampling, the 
+	// cosine theta factor cancels out
+	return glm::dot(wo, wi) > 0 ? glm::one_over_pi<float>() : 0.0f;
 }
 
 
-glm::vec3 PerfectSpecular::SampleBSDF(glm::vec3 norm, glm::vec3 ri)
+glm::vec3 DielectricSpecular::EvaluateBSDF(Shape * shape, glm::vec3 worldNormal, glm::vec3 ro, glm::vec3 ri) { return glm::vec3(1.0f); }
+
+float DielectricSpecular::CalculatePdf(glm::vec3 ro, glm::vec3 ri) { return 1.0f; }
+
+glm::vec3 DielectricSpecular::SampleBSDF(glm::vec3 norm, glm::vec3 ri)
 {
-	glm::vec3 newDir = glm::reflect(ri, norm);
+	// Check if we are entering or exiting the medium
+	float refraction_ratio = glm::dot(norm, ri) > 0.0f ? 1.0f / ior : ior;
 
-	// Compute based on Fre
+	float cosTheta = glm::min(glm::dot(norm, ri), 1.0f);
+	float sinTheta = glm::sqrt(glm::max(0.0f, 1.0f - cosTheta * cosTheta));
 
-	return glm::reflect(ri, norm);
+	bool cannotRefract = refraction_ratio * sinTheta > 1.0f;
+	glm::vec3 direction;
+
+	if (cannotRefract || Reflectance(cosTheta, refraction_ratio) > Walnut::Random::Float()) {
+		direction = glm::reflect(ri, norm);
+	}
+	else {
+		direction = glm::refract(ri, norm, refraction_ratio);
+	}
+
+	return direction;
+}
+
+float DielectricSpecular::Reflectance(float cosTheta, float refraction_ratio)
+{
+	// Using Schilck's approximation for reflectance
+	auto r0 = (1 - refraction_ratio) / (1 + refraction_ratio);
+	r0 = r0 * r0;
+	return r0 + (1 - r0) * glm::pow(1.0f - cosTheta, 5.0f);
+}
+
+glm::vec3 SimpleMetal::EvaluateBSDF(Shape* shape, glm::vec3 worldNormal, glm::vec3 ro, glm::vec3 ri)
+{
+	return Albedo;
+}
+
+glm::vec3 SimpleMetal::SampleBSDF(glm::vec3 norm, glm::vec3 ri)
+{
+	// Fuzzy reflection based on roughness
+	glm::vec3 v = glm::reflect(ri, norm);
+	v = glm::normalize(v);
+	v = glm::normalize(v + Roughness * Utils::UniformSampleSphere(1.0f));
+	return v;
+}
+
+float SimpleMetal::CalculatePdf(glm::vec3 ro, glm::vec3 ri)
+{
+	return glm::dot(ro, ri) > 0.0f ? 1.0f : 0.0f;
 }

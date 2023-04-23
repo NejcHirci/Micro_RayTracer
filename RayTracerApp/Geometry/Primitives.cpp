@@ -33,13 +33,13 @@ glm::vec3 Sphere::UniformSample()
 
 	// Convert to spherical coordinates
 	float theta = 2 * glm::pi<float>() * u;
-	float phi = glm::acos(2 * v - 1);
+	float phi = glm::acos(1.0 - 2.0f * v);
 
 	// Convert to Cartesian coordinates
 	glm::vec3 localpoint = {
 		Radius * glm::sin(phi) * glm::cos(theta),
-		Radius * glm::sin(phi) * glm::sin(theta),
-		Radius * glm::cos(phi)
+		Radius * glm::cos(phi),
+		Radius * glm::sin(phi) * glm::sin(theta)
 	};
 
 	// Convert to world space
